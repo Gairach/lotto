@@ -35,7 +35,7 @@ class _LoginPagesState extends State<LoginPages> {
 
     try {
       final config = await AppConfig.load();
-      final loginUrl = "${config.apiEndpoint}/api/users/login";
+      final loginUrl = "${config.apiEndpoint}/users/login";
 
       final req = {"username": username, "password": password};
 
@@ -56,7 +56,11 @@ class _LoginPagesState extends State<LoginPages> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => Homepage()),
+          MaterialPageRoute(
+            builder: (context) => HomePage(
+              isAdmin: loginResponse.user.role == 'admin', // ตรวจสอบ role
+            ),
+          ),
         );
       } else {
         final data = jsonDecode(response.body);

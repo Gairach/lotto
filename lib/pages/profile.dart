@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Color.fromARGB(255, 255, 255, 255),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Image.network(
-          'https://raw.githubusercontent.com/FarmHouse2263/Lotto_Project/refs/heads/main/Logo_Lotto.png',
-          height: 40,
+          'https://raw.githubusercontent.com/FarmHouse2263/lotto/refs/heads/main/image%202.png',
+          height: 30,
           width: 80,
           fit: BoxFit.contain,
         ),
@@ -49,7 +55,6 @@ class ProfilePage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 30),
-
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -72,29 +77,6 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 30),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange[300],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 2,
-                ),
-                child: const Text(
-                  'ประวัติการซื้อ/ขายหวย',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -105,13 +87,22 @@ class ProfilePage extends StatelessWidget {
         unselectedItemColor: Colors.grey[600],
         currentIndex: 3,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
             label: 'สินค้า',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'ประวัติ'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'ประวัติ',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ],
         onTap: (index) {},
       ),
@@ -123,7 +114,11 @@ class UserInfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const UserInfoRow({super.key, required this.label, required this.value});
+  const UserInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +140,10 @@ class UserInfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontSize: 14, color: Colors.black),
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black,
+            ),
           ),
         ),
       ],

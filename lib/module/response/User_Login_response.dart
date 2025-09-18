@@ -7,7 +7,8 @@ class UserLoginResponse {
     required this.user,
   });
 
-  factory UserLoginResponse.fromJson(Map<String, dynamic> json) => UserLoginResponse(
+  factory UserLoginResponse.fromJson(Map<String, dynamic> json) =>
+      UserLoginResponse(
         message: json["message"],
         user: User.fromJson(json["user"]),
       );

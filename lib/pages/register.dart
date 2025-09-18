@@ -39,7 +39,7 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
     final config = await AppConfig.load();
-    final apiUrlregister = "${config.apiEndpoint}/api/users";
+    final apiUrlregister = "${config.apiEndpoint}/users";
 
     final req = {
       "username": username,
