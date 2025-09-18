@@ -1,19 +1,66 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/config/config.dart';
+import 'package:http/http.dart' as http;
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final int userId;
+  const ProfilePage({
+    super.key,
+    required this.userId,
+  });
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  bool isLoading = true;
+  Map<String, dynamic>? user;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUser();
+  }
+
+  Future<void> fetchUser() async {
+    try {
+      final config = await AppConfig.load();
+      final response = await http.get(
+        Uri.parse("${config.apiEndpoint}/users/${widget.userId}"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          user = data;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("ไม่สามารถดึงข้อมูลผู้ใช้ได้")),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("เกิดข้อผิดพลาด: $e")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 255, 255, 255),
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -27,59 +74,69 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         centerTitle: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.grey[400],
-                  child: const Icon(
-                    Icons.person,
-                    size: 35,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 15),
-                const Text(
-                  'Status : User',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 30),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[400]!, width: 1),
-              ),
-              child: const Column(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  UserInfoRow(label: 'Uid :', value: '1'),
-                  SizedBox(height: 12),
-                  UserInfoRow(label: 'Name :', value: 'inwza007'),
-                  SizedBox(height: 12),
-                  UserInfoRow(label: 'Email :', value: 'inwzanum7@gmail.com'),
-                  SizedBox(height: 12),
-                  UserInfoRow(label: 'Tel :', value: '012-456-7890'),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.grey[400],
+                        child: const Icon(
+                          Icons.person,
+                          size: 35,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      Text(
+                        'Status : ${user?['role'] ?? 'User'}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[400]!, width: 1),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        UserInfoRow(label: 'Uid :', value: '${widget.userId}'),
+                        const SizedBox(height: 12),
+                        UserInfoRow(
+                            label: 'Name :',
+                            value: '${user?['username'] ?? ''}'),
+                        const SizedBox(height: 12),
+                        UserInfoRow(
+                            label: 'Email :', value: '${user?['email'] ?? ''}'),
+                        const SizedBox(height: 12),
+                        UserInfoRow(
+                            label: 'Full Name :',
+                            value: '${user?['full_name'] ?? ''}'),
+                        const SizedBox(height: 12),
+                        UserInfoRow(
+                            label: 'Wallet :',
+                            value: '${user?['wallet'] ?? '0.00'}'),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,

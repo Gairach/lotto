@@ -7,8 +7,14 @@ import 'package:flutter_application_1/pages/profile.dart';
 import 'package:http/http.dart' as http;
 
 class HomePage extends StatefulWidget {
-  final bool isAdmin; // กำหนดว่าเป็น admin หรือไม่
-  const HomePage({super.key, this.isAdmin = false});
+  final bool isAdmin;
+  final int userId;
+
+  const HomePage({
+    super.key,
+    this.isAdmin = false,
+    required this.userId,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -18,7 +24,7 @@ class _HomePageState extends State<HomePage> {
   String url = "";
   bool isLoadingConfig = true;
   bool isLoadingTickets = true;
-  bool currentDrawOpen = false; // สถานะงวดปัจจุบัน
+  bool currentDrawOpen = false;
 
   final List<Map<String, dynamic>> lottoList = [];
 
@@ -34,8 +40,42 @@ class _HomePageState extends State<HomePage> {
       url = config.apiEndpoint;
       isLoadingConfig = false;
     });
-
     await fetchTickets();
+  }
+
+  // ซื้อ Lotto
+  Future<void> buyLotto(int index) async {
+    final item = lottoList[index];
+    if (item['status'] != 'มีอยู่' || !currentDrawOpen) return;
+
+    try {
+      final config = await AppConfig.load();
+      final ticketId = item['ticket_id'];
+
+      final response = await http.post(
+        Uri.parse("${config.apiEndpoint}/tickets/buy/$ticketId"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'user_id': widget.userId}),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          lottoList[index]['status'] = 'ซื้อแล้ว';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ซื้อ Lotto สำเร็จ')),
+        );
+      } else {
+        final data = jsonDecode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ซื้อ Lotto ไม่สำเร็จ: ${data['error']}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+      );
+    }
   }
 
   // สร้างงวดใหม่
@@ -46,11 +86,8 @@ class _HomePageState extends State<HomePage> {
     try {
       final response = await http.post(Uri.parse("$url/tickets/draws"));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        // ดึงเลขของ draw ล่าสุดจาก API
-        await fetchTickets(); // fetchTickets() จะกรองเฉพาะ draw ล่าสุด status = active
-
+        final data = jsonDecode(response.body);
+        await fetchTickets();
         return "สร้างงวดใหม่สำเร็จ (ID: ${data['drawId']})";
       } else {
         return "สร้างงวดไม่สำเร็จ (${response.statusCode})";
@@ -70,6 +107,7 @@ class _HomePageState extends State<HomePage> {
 
       final response =
           await http.post(Uri.parse("$url/tickets/draws/$drawId/close"));
+
       if (response.statusCode == 200) {
         setState(() {
           currentDrawOpen = false;
@@ -91,7 +129,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ดึงเลขล็อตโต้ล่าสุด (เฉพาะ draw ที่ status = active)
+  // ดึง ticket ล่าสุด
   Future<void> fetchTickets() async {
     if (url.isEmpty) return;
     setState(() {
@@ -101,28 +139,26 @@ class _HomePageState extends State<HomePage> {
     try {
       final response = await http.get(Uri.parse("$url/tickets"));
       if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
+        final List data = jsonDecode(response.body);
 
         if (data.isNotEmpty) {
-          // หา draw_id ล่าสุด
           final latestDrawId = data
               .map((item) => item['draw_id'] as int)
               .reduce((a, b) => a > b ? a : b);
 
-          // เลือก ticket ของ draw ล่าสุด
           final latestTickets =
               data.where((item) => item['draw_id'] == latestDrawId);
 
           setState(() {
             lottoList.clear();
             lottoList.addAll(latestTickets.map((item) => {
+                  'ticket_id': item['ticket_id'],
                   'number': item['ticket_number'],
                   'price': item['price'],
                   'status':
                       item['status'] == 'available' ? 'มีอยู่' : 'ซื้อแล้ว',
                   'round': item['draw_id'],
                 }));
-            // ตรวจสอบว่างวดล่าสุดยังเปิดขายหรือไม่
             currentDrawOpen =
                 lottoList.any((item) => item['status'] == 'มีอยู่');
           });
@@ -140,14 +176,6 @@ class _HomePageState extends State<HomePage> {
         isLoadingTickets = false;
       });
     }
-  }
-
-  void buyData(int index) {
-    setState(() {
-      if (lottoList[index]['status'] == 'มีอยู่' && currentDrawOpen) {
-        lottoList[index]['status'] = 'ซื้อแล้ว';
-      }
-    });
   }
 
   @override
@@ -300,7 +328,8 @@ class _HomePageState extends State<HomePage> {
                                   FilledButton(
                                     onPressed: item['status'] == 'มีอยู่' &&
                                             currentDrawOpen
-                                        ? () => buyData(lottoList.indexOf(item))
+                                        ? () =>
+                                            buyLotto(lottoList.indexOf(item))
                                         : null,
                                     style: FilledButton.styleFrom(
                                       backgroundColor:
@@ -316,7 +345,7 @@ class _HomePageState extends State<HomePage> {
                                           ? 'ซื้อ'
                                           : 'ซื้อแล้ว',
                                     ),
-                                  ),
+                                  )
                                 ],
                               ),
                             ],
@@ -350,7 +379,9 @@ class _HomePageState extends State<HomePage> {
           } else if (index == 3) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ProfilePage()),
+              MaterialPageRoute(
+                builder: (context) => ProfilePage(userId: widget.userId),
+              ),
             );
           }
         },

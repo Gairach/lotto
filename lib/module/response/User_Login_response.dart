@@ -15,6 +15,7 @@ class UserLoginResponse {
 }
 
 class User {
+  int userId;
   String username;
   String email;
   String fullName;
@@ -22,6 +23,7 @@ class User {
   String wallet;
 
   User({
+    required this.userId,
     required this.username,
     required this.email,
     required this.fullName,
@@ -30,6 +32,7 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) => User(
+        userId: json["user_id"],
         username: json["username"],
         email: json["email"],
         fullName: json["full_name"],

@@ -49,6 +49,10 @@ class _LoginPagesState extends State<LoginPages> {
         final loginResponse =
             UserLoginResponse.fromJson(jsonDecode(response.body));
 
+        print("Login Success!");
+        print("UserID: ${loginResponse.user.userId}");
+        print("Role: ${loginResponse.user.role}");
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text("Login สำเร็จ: ${loginResponse.user.username}")),
@@ -58,7 +62,8 @@ class _LoginPagesState extends State<LoginPages> {
           context,
           MaterialPageRoute(
             builder: (context) => HomePage(
-              isAdmin: loginResponse.user.role == 'admin', // ตรวจสอบ role
+              isAdmin: loginResponse.user.role.toLowerCase() == 'admin',
+              userId: loginResponse.user.userId, // ต้องตรงกับตัว widget
             ),
           ),
         );
