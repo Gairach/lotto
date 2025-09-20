@@ -27,6 +27,7 @@ class _HomePageState extends State<HomePage> {
   bool currentDrawOpen = false;
 
   final List<Map<String, dynamic>> lottoList = [];
+  int latestDrawId = 0;
 
   @override
   void initState() {
@@ -49,13 +50,10 @@ class _HomePageState extends State<HomePage> {
     if (item['status'] != 'มีอยู่' || !currentDrawOpen) return;
 
     try {
-      final config = await AppConfig.load();
-      final ticketId = item['ticket_id'];
-
       final response = await http.post(
-        Uri.parse("${config.apiEndpoint}/tickets/buy/$ticketId"),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'user_id': widget.userId}),
+        Uri.parse("$url/tickets/buy/${item['ticket_id']}"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"user_id": widget.userId}),
       );
 
       if (response.statusCode == 200) {
@@ -78,7 +76,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // สร้างงวดใหม่
+  // สร้างงวดใหม่ (Admin)
   Future<String> createLottoDraw() async {
     if (!widget.isAdmin) return "คุณไม่มีสิทธิ์สร้างงวดใหม่";
     if (currentDrawOpen) return "ยังมีงวดที่เปิดอยู่ ไม่สามารถสร้างใหม่ได้";
@@ -97,16 +95,15 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ปิดการซื้อขาย
+  // ปิดการซื้อขาย (Admin)
   Future<void> closeCurrentDraw() async {
     if (!widget.isAdmin || !currentDrawOpen) return;
 
     try {
-      final drawId = lottoList.isNotEmpty ? lottoList.first['round'] : null;
-      if (drawId == null) return;
+      if (latestDrawId == 0) return;
 
       final response =
-          await http.post(Uri.parse("$url/tickets/draws/$drawId/close"));
+          await http.post(Uri.parse("$url/tickets/draws/$latestDrawId/close"));
 
       if (response.statusCode == 200) {
         setState(() {
@@ -142,7 +139,7 @@ class _HomePageState extends State<HomePage> {
         final List data = jsonDecode(response.body);
 
         if (data.isNotEmpty) {
-          final latestDrawId = data
+          latestDrawId = data
               .map((item) => item['draw_id'] as int)
               .reduce((a, b) => a > b ? a : b);
 
@@ -204,76 +201,73 @@ class _HomePageState extends State<HomePage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'LOTTO',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              TextButton(
-                                style: TextButton.styleFrom(
-                                  backgroundColor: Colors.orange[200],
-                                  foregroundColor: Colors.black,
-                                ),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          CheckRewardPage(loctoList: lottoList),
-                                    ),
-                                  );
-                                },
-                                child: const Text('ตรวจรางวัล'),
-                              ),
-                              const SizedBox(width: 8),
-                              if (widget.isAdmin) ...[
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
                                 TextButton(
                                   style: TextButton.styleFrom(
-                                    backgroundColor: currentDrawOpen
-                                        ? Colors.grey
-                                        : Colors.green[200],
+                                    backgroundColor: Colors.orange[200],
                                     foregroundColor: Colors.black,
                                   ),
-                                  onPressed: currentDrawOpen
-                                      ? null
-                                      : () async {
-                                          final result =
-                                              await createLottoDraw();
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(content: Text(result)),
-                                            );
-                                          }
-                                        },
-                                  child: const Text('สร้าง Lotto'),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => CheckRewardPage(
+                                          drawId: latestDrawId,
+                                          apiEndpoint: url,
+                                          userId: widget.userId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('ตรวจรางวัล'),
                                 ),
                                 const SizedBox(width: 8),
-                                TextButton(
-                                  style: TextButton.styleFrom(
-                                    backgroundColor: currentDrawOpen
-                                        ? Colors.red[200]
-                                        : Colors.grey,
-                                    foregroundColor: Colors.black,
+                                if (widget.isAdmin) ...[
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: currentDrawOpen
+                                          ? Colors.grey
+                                          : Colors.green[200],
+                                      foregroundColor: Colors.black,
+                                    ),
+                                    onPressed: currentDrawOpen
+                                        ? null
+                                        : () async {
+                                            final result =
+                                                await createLottoDraw();
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(content: Text(result)),
+                                              );
+                                            }
+                                          },
+                                    child: const Text('สร้าง Lotto'),
                                   ),
-                                  onPressed:
-                                      currentDrawOpen ? closeCurrentDraw : null,
-                                  child: const Text('ปิดการซื้อขาย'),
-                                ),
+                                  const SizedBox(width: 8),
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: currentDrawOpen
+                                          ? Colors.red[200]
+                                          : Colors.grey,
+                                      foregroundColor: Colors.black,
+                                    ),
+                                    onPressed: currentDrawOpen
+                                        ? closeCurrentDraw
+                                        : null,
+                                    child: const Text('ปิดการซื้อขาย'),
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     // แสดงเลขล็อตโต้ หรือข้อความเมื่อไม่มี draw active
                     if (isLoadingTickets)
                       const Center(child: CircularProgressIndicator())
@@ -368,13 +362,21 @@ class _HomePageState extends State<HomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => CheckRewardPage(loctoList: lottoList)),
+                  builder: (context) => CheckRewardPage(
+                        drawId: latestDrawId,
+                        apiEndpoint: url,
+                        userId: widget.userId,
+                      )),
             );
           } else if (index == 2) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) => const CheckRewardHistoryPage()),
+                builder: (context) => CheckRewardHistoryPage(
+                  userId: widget.userId,
+                  apiEndpoint: url, // url ของ API endpoint
+                ),
+              ),
             );
           } else if (index == 3) {
             Navigator.push(

@@ -55,8 +55,33 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> deleteAllData() async {
+    try {
+      final config = await AppConfig.load();
+      final response = await http.delete(
+        Uri.parse("${config.apiEndpoint}/clear/admin"),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ลบข้อมูลทั้งหมดสำเร็จ')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ลบข้อมูลไม่สำเร็จ (${response.statusCode})')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isAdmin = user?['role'] == 'admin';
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -131,6 +156,39 @@ class _ProfilePageState extends State<ProfilePage> {
                         UserInfoRow(
                             label: 'Wallet :',
                             value: '${user?['wallet'] ?? '0.00'}'),
+                        const SizedBox(height: 20),
+                        if (isAdmin)
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.delete),
+                            label: const Text('ลบข้อมูลทั้งหมด'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('ยืนยันการลบ'),
+                                  content: const Text(
+                                      'คุณต้องการลบข้อมูลทั้งหมดจริงหรือไม่?'),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(false),
+                                        child: const Text('ยกเลิก')),
+                                    TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(true),
+                                        child: const Text('ยืนยัน')),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true) {
+                                deleteAllData();
+                              }
+                            },
+                          ),
                       ],
                     ),
                   ),
