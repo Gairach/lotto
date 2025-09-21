@@ -180,12 +180,19 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context); // กลับไปหน้าก่อนหน้า
+          },
+        ),
         title: Image.network(
           'https://raw.githubusercontent.com/FarmHouse2263/lotto/refs/heads/main/image%202.png',
           height: 30,
           width: 80,
           fit: BoxFit.cover,
         ),
+        centerTitle: true, // ถ้าต้องการให้ logo อยู่กลาง
       ),
       body: SafeArea(
         child: isLoadingConfig
